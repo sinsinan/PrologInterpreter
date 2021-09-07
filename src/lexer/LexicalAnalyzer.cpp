@@ -1,204 +1,186 @@
-#include "../include/lexer.hpp"
+#include "../include/LexicalAnalyzer.hpp"
 
-using namespace std;
-
-std::map<std::string, lexer::Symbol> lexer::LexicalAnalyzer::initializeMap()
+std::map<std::string, Symbol> LexicalAnalyzer::initializeMap()
 {
     std::map<std::string, Symbol> map = std::map<std::string, Symbol>();
-    map.insert(pair<string, Symbol>("and", Symbol::AND));
-    map.insert(pair<string, Symbol>("not", Symbol::NOT));
+    map.insert(std::pair<std::string, Symbol>("and", Symbol::AND));
+    map.insert(std::pair<std::string, Symbol>("not", Symbol::NOT));
     return map;
 }
 
-lexer::LexicalAnalyzer::LexicalAnalyzer(std::string p)
+LexicalAnalyzer::LexicalAnalyzer(std::string p)
 {
-        lineNo = 1;
-        index = 0;
-        program = p;
-        length = p.length();
-        keywordToSymbolMap = initializeMap();
+    lineNo = 1;
+    index = 0;
+    program = p;
+    length = p.length();
+    keywordToSymbolMap = initializeMap();
 };
 
-//    public Lexer(String exp) {
-//        exp = exp;
-//        length = exp.length();
-//        index = 0;
-//        keyWordTable = new KeyWordTable();
-//        lineNumber = 1;
-//    }
-//
- lexer::Symbol lexer::LexicalAnalyzer::getSymbol() {
-        if (index >= length) {
-            return Symbol::EOFSY;
-        }
-        Symbol tok;
-        switch (program[index]) {
-            // Handling comments
-            case '{':
-                while (program[index] != '}') {
-                    index++;
-                }
-                index++;
-                tok = getSymbol();
-                break;
-            case '\n':
-                lineNo+=1;
-            case '\t':
-            case ' ':
-                index++;
-                tok = getSymbol();
-                break;
-            case ',':
-                index++;
-                tok = Symbol::COMMA;
-                break;
-            case '(':
-                index++;
-                tok = Symbol::OPEN_PARANTHESIS;
-                break;
-            case ')':
-                index++;
-                tok = Symbol::CLOSE_PARANTHESIS;
-                break;
-            case '[':
-                index++;
-                tok = Symbol::OPEN_SQUARE;
-                break;
-            case ']':
-                index++;
-                tok = Symbol::CLOSE_SQUARE;
-                break;
-
-            case '.':
-                index++;
-                tok = Symbol::DOT;
-                break;
-            case '0':
-            case '1':
-            case '2':
-            case '3':
-            case '4':
-            case '5':
-            case '6':
-            case '7':
-            case '8':
-            case '9':
-                tok = getDoubleFromString();
-                break;
-            case '\'':
-                parseCharacterLiteral();
-                tok = Token.CHAR_LITERAL;
-                break;
-            default:
-                tok = getKeyWordSymbol();
-                if (tok != Token.EOFSY) {
-                    break;
-                }
-                tok = getVariableSymbol();
-                if (tok != Token.EOFSY) {
-                    break;
-                }
-                System.out.println(String.format("Invalid character %c found at index %d in expression %s", exp.charAt(index), index, exp));
-                throw new Exception("Invalid character found");
-        }
-        return tok;
+Symbol LexicalAnalyzer::getSymbol() {
+    if (index >= length) {
+        return Symbol::EOFSY;
     }
-//
-//    public double getNumber() {
-//        return number;
-//    }
-
-lexer::Symbol lexer::LexicalAnalyzer::getDoubleFromString() {
-        String numberStr = "";
-        while (index < length && (exp.charAt(index) == '0' || exp.charAt(index) == '1' || exp.charAt(index) == '2' || exp.charAt(index) == '3' || exp.charAt(index) == '4' || exp.charAt(index) == '5' || exp.charAt(index) == '6' || exp.charAt(index) == '7' || exp.charAt(index) == '8' || exp.charAt(index) == '9')) {
-            numberStr += exp.charAt(index);
+    Symbol tok;
+    switch (program[index]) {
+    case '{':
+        while (program[index] != '}') {
+            if (program[index] == '\n')
+            {
+                lineNo++;
+            }
             index++;
         }
-        number = Double.parseDouble(numberStr);
-        return Token.NUMERAL;
+        index++;
+        tok = getSymbol();
+        break;
+    case '\n':
+        lineNo += 1;
+    case '\t':
+    case ' ':
+        index++;
+        tok = getSymbol();
+        break;
+    case ',':
+        index++;
+        tok = Symbol::COMMA;
+        break;
+    case '(':
+        index++;
+        tok = Symbol::OPEN_PARANTHESIS;
+        break;
+    case ')':
+        index++;
+        tok = Symbol::CLOSE_PARANTHESIS;
+        break;
+    case '[':
+        index++;
+        tok = Symbol::OPEN_SQUARE;
+        break;
+    case ']':
+        index++;
+        tok = Symbol::CLOSE_SQUARE;
+        break;
+
+    case '.':
+        index++;
+        tok = Symbol::DOT;
+        break;
+    case '<':
+        index++;
+        if (index + 1 < length && program[index] == '=')
+        {
+            tok = Symbol::IMPLIED_BY;
+            break;
+        }
+        //error
+    case ':':
+        tok = Symbol::COLON;
+        index++;
+        if (index + 1 < length && program[index] == '-')
+        {
+            tok = Symbol::IMPLIED_BY;
+            break;
+        }
+        break;
+    case '?':
+        index++;
+        tok = Symbol::QUESTION;
+        break;
+    case '&':
+        index++;
+        tok = Symbol::AND;
+        break;
+    case '0':
+    case '1':
+    case '2':
+    case '3':
+    case '4':
+    case '5':
+    case '6':
+    case '7':
+    case '8':
+    case '9':
+        tok = getDoubleFromString();
+        break;
+    default:
+        tok = getKeyWordSymbol();
+        if (tok != Symbol::EOFSY) {
+            break;
+        }
+        tok = getVariableSymbol();
+        if (tok != Symbol::EOFSY) {
+            break;
+        }
+        //error
     }
-//
-//    private Token getKeyWordSymbol() {
-//        String possibleKeyWord = "";
-//        int tempIndex = index;
-//        Token tokenFromKeyWord = keyWordTable.getSymbolFromKeyWord(possibleKeyWord);
-//        while (keyWordTable.getKeywordMatchCount(possibleKeyWord) > 0) {
-//            if (keyWordTable.getSymbolFromKeyWord(possibleKeyWord) != Token.EOFSY) {
-//                tokenFromKeyWord = keyWordTable.getSymbolFromKeyWord(possibleKeyWord);
-//                index = tempIndex;
-//            }
-//            possibleKeyWord += exp.charAt(tempIndex);
-//            tempIndex++;
-//        }
-//        return tokenFromKeyWord;
-//    }
-//
-//    private Token getVariableSymbol() {
-//        if (Character.isLetter(exp.charAt(index))) {
-//            variableName = "";
-//            while (index < length && (Character.isAlphabetic(exp.charAt(index)) || Character.isDigit(exp.charAt(index)) || exp.charAt(index) == '_')) {
-//                variableName += exp.charAt(index);
-//                index++;
-//            }
-//            return Token.WORD;
-//
-//        } else {
-//            return Token.EOFSY;
-//        }
-//    }
-//
-//    private void parseCharacterLiteral() throws Exception {
-//        quotedString = "";
-//        int quoteCount = 0;
-//        if (exp.charAt(index) == '\'') {
-//            while ((index < length) && quoteCount < 2) {
-//                if (exp.charAt(index) == '\'') {
-//                    quoteCount++;
-//                } else {
-//                    quotedString += exp.charAt(index);
-//                }
-//                index++;
-//            }
-//        }
-//        if (quoteCount != 2) {
-//            throw new Exception("Quoted string not ended");
-//        }
-//        if (quotedString.length() != 1) {
-//            throw new Exception("Quoted string should be 1, got "+ quotedString.length());
-//        }
-//    }
-//
-//    private void parseQuotedString() throws Exception {
-//        quotedString = "";
-//        int quoteCount = 0;
-//        if (exp.charAt(index) == '"') {
-//            while ((index < length) && quoteCount < 2) {
-//                if (exp.charAt(index) == '"') {
-//                    quoteCount++;
-//                } else {
-//                    quotedString += exp.charAt(index);
-//                }
-//                index++;
-//            }
-//        }
-//        if (quoteCount != 2) {
-//            throw new Exception("Quoted string not ended");
-//        }
-//    }
-//
-//    public String getVariableName() {
-//        return variableName;
-//    }
-//
-//    public String getQuotedString() {
-//        return quotedString;
-//    }
-//
-//    public int getLineNumber() {
-//        return lineNumber;
-//    }
-//
-//    public String getNonParsedExp() {
-//        return exp.substring(index);
-//    }
-//}
+    return tok;
+}
+
+double LexicalAnalyzer::getNumber() {
+    return number;
+}
+
+Symbol LexicalAnalyzer::getDoubleFromString() {
+    std::string numberStr = "";
+    while (index < length && (program[index] == '0' || program[index] == '1' || program[index] == '2' || program[index] == '3' || program[index] == '4' || program[index] == '5' || program[index] == '6' || program[index] == '7' || program[index] == '8' || program[index] == '9')) {
+        numberStr += program[index];
+        index++;
+    }
+    number = stod(numberStr);
+    return Symbol::NUMERAL;
+}
+
+Symbol LexicalAnalyzer::getKeyWordSymbol() {
+    std::string possibleKeyWord = "";
+    int tempIndex = index;
+    std::map<std::string, Symbol>::const_iterator keywordSymbolInterator;
+    Symbol tokenFromKeyWord = Symbol::EOFSY;
+    while (getKeywordMatchCount(possibleKeyWord) > 0) {
+        keywordSymbolInterator = keywordToSymbolMap.find(possibleKeyWord);
+        if (keywordSymbolInterator != keywordToSymbolMap.end()) {
+            tokenFromKeyWord = keywordSymbolInterator->second;
+            index = tempIndex;
+        }
+        possibleKeyWord += program[tempIndex];
+        tempIndex++;
+    }
+    return tokenFromKeyWord;
+}
+
+int LexicalAnalyzer::getKeywordMatchCount(std::string inputKeyWord) {
+    int count = 0;
+    for (auto keywordSymbolPair : keywordToSymbolMap) {
+        if (keywordSymbolPair.first.rfind(inputKeyWord, 0) == 0 || keywordSymbolPair.first == inputKeyWord) {
+            count++;
+        }
+    }
+    return count;
+}
+
+Symbol  LexicalAnalyzer::getVariableSymbol() {
+    if (iswalpha(program[index])) {
+        variableName = "";
+        while (index < length && (iswalpha(program[index]) || iswalnum(program[index]))) {
+            variableName += program[index];
+            index++;
+        }
+        if (islower(variableName[0]))
+        {
+            return Symbol::LC_WORD;
+        }
+        else
+        {
+            return Symbol::UC_WORD;
+        }
+    }
+    else {
+        return Symbol::EOFSY;
+    }
+}
+std::string LexicalAnalyzer::getVariableName() {
+    return variableName;
+}
+int LexicalAnalyzer::getLineNumber() {
+    return lineNo;
+}
